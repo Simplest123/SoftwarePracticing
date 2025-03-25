@@ -1,0 +1,4 @@
+#Thu Nov 18 13:20:45 CST 2021
+base.0=D\:\\android_workspace\\MiNotes\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
