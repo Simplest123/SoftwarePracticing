@@ -38,34 +38,38 @@
  import java.util.Map;
  
  /**
-  * 自定义EditText控件，用于便签编辑功能
-  * 主要特性：
+  * 自定义 EditText 控件，用于便签编辑功能
+  * 主要功能：
   * 1. 支持文本编辑监听（删除、回车事件）
   * 2. 支持链接处理（电话、网页、邮件）
   * 3. 优化触摸选择体验
   */
  public class NoteEditText extends EditText {
+     // 日志标签
      private static final String TAG = "NoteEditText";
      
-     private int mIndex; // 当前编辑框在列表中的索引位置
-     private int mSelectionStartBeforeDelete; // 删除操作前的选择起始位置
+     // 当前编辑框在列表中的索引位置
+     private int mIndex; 
+     
+     // 删除操作前的选择起始位置
+     private int mSelectionStartBeforeDelete; 
  
      // 支持的链接协议
-     private static final String SCHEME_TEL = "tel:";
-     private static final String SCHEME_HTTP = "http:";
-     private static final String SCHEME_EMAIL = "mailto:";
+     private static final String SCHEME_TEL = "tel:";       // 电话链接
+     private static final String SCHEME_HTTP = "http:";     // 网页链接
+     private static final String SCHEME_EMAIL = "mailto:";  // 邮件链接
  
      // 链接类型与对应操作文本的资源ID映射
      private static final Map<String, Integer> sSchemaActionResMap = new HashMap<String, Integer>();
      static {
-         sSchemaActionResMap.put(SCHEME_TEL, R.string.note_link_tel);    // 电话链接
-         sSchemaActionResMap.put(SCHEME_HTTP, R.string.note_link_web);   // 网页链接
-         sSchemaActionResMap.put(SCHEME_EMAIL, R.string.note_link_email);// 邮件链接
+         sSchemaActionResMap.put(SCHEME_TEL, R.string.note_link_tel);     // 电话链接对应的字符串资源
+         sSchemaActionResMap.put(SCHEME_HTTP, R.string.note_link_web);    // 网页链接对应的字符串资源
+         sSchemaActionResMap.put(SCHEME_EMAIL, R.string.note_link_email);// 邮件链接对应的字符串资源
      }
  
      /**
       * 文本变化监听接口
-      * 由NoteEditActivity实现，用于处理编辑框的增删操作
+      * 由 NoteEditActivity 实现，用于处理编辑框的增删操作
       */
      public interface OnTextViewChangeListener {
          /**
@@ -90,13 +94,40 @@
          void onTextChange(int index, boolean hasText);
      }
  
-     private OnTextViewChangeListener mOnTextViewChangeListener; // 文本变化监听器
+     // 文本变化监听器
+     private OnTextViewChangeListener mOnTextViewChangeListener; 
  
-     // 构造方法
+     // ==================== 构造方法 ====================
+ 
+     /**
+      * 默认构造方法
+      * @param context 上下文对象
+      */
      public NoteEditText(Context context) {
          super(context, null);
-         mIndex = 0;
+         mIndex = 0; // 初始化索引为0
      }
+ 
+     /**
+      * 带属性集的构造方法
+      * @param context 上下文对象
+      * @param attrs 属性集
+      */
+     public NoteEditText(Context context, AttributeSet attrs) {
+         super(context, attrs, android.R.attr.editTextStyle);
+     }
+ 
+     /**
+      * 带属性集和样式的构造方法
+      * @param context 上下文对象
+      * @param attrs 属性集
+      * @param defStyle 默认样式
+      */
+     public NoteEditText(Context context, AttributeSet attrs, int defStyle) {
+         super(context, attrs, defStyle);
+     }
+ 
+     // ==================== 公共方法 ====================
  
      /**
       * 设置当前编辑框索引
@@ -114,16 +145,12 @@
          mOnTextViewChangeListener = listener;
      }
  
-     public NoteEditText(Context context, AttributeSet attrs) {
-         super(context, attrs, android.R.attr.editTextStyle);
-     }
- 
-     public NoteEditText(Context context, AttributeSet attrs, int defStyle) {
-         super(context, attrs, defStyle);
-     }
+     // ==================== 触摸事件处理 ====================
  
      /**
       * 处理触摸事件，优化文本选择体验
+      * @param event 触摸事件
+      * @return 是否处理了该事件
       */
      @Override
      public boolean onTouchEvent(MotionEvent event) {
@@ -132,23 +159,28 @@
                  // 计算触摸位置对应的文本偏移量
                  int x = (int) event.getX();
                  int y = (int) event.getY();
-                 x -= getTotalPaddingLeft();
+                 x -= getTotalPaddingLeft();    // 减去内边距
                  y -= getTotalPaddingTop();
-                 x += getScrollX();
+                 x += getScrollX();           // 加上滚动偏移
                  y += getScrollY();
  
                  Layout layout = getLayout();
-                 int line = layout.getLineForVertical(y);
-                 int off = layout.getOffsetForHorizontal(line, x);
-                 Selection.setSelection(getText(), off); // 设置选择位置
+                 int line = layout.getLineForVertical(y);         // 获取垂直方向的行号
+                 int off = layout.getOffsetForHorizontal(line, x); // 获取水平方向的偏移
+                 Selection.setSelection(getText(), off);            // 设置选择位置
                  break;
          }
  
          return super.onTouchEvent(event);
      }
  
+     // ==================== 按键事件处理 ====================
+ 
      /**
       * 按键按下事件处理
+      * @param keyCode 按键代码
+      * @param event 按键事件
+      * @return 是否处理了该事件
       */
      @Override
      public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -169,6 +201,9 @@
  
      /**
       * 按键释放事件处理
+      * @param keyCode 按键代码
+      * @param event 按键事件
+      * @return 是否处理了该事件
       */
      @Override
      public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -201,8 +236,13 @@
          return super.onKeyUp(keyCode, event);
      }
  
+     // ==================== 焦点变化处理 ====================
+ 
      /**
       * 焦点变化处理
+      * @param focused 是否获得焦点
+      * @param direction 焦点方向
+      * @param previouslyFocusedRect 之前获得焦点的矩形区域
       */
      @Override
      protected void onFocusChanged(boolean focused, int direction, Rect previouslyFocusedRect) {
@@ -217,8 +257,11 @@
          super.onFocusChanged(focused, direction, previouslyFocusedRect);
      }
  
+     // ==================== 上下文菜单处理 ====================
+ 
      /**
       * 创建上下文菜单，用于处理链接操作
+      * @param menu 上下文菜单
       */
      @Override
      protected void onCreateContextMenu(ContextMenu menu) {
