@@ -1,5 +1,4 @@
 /*
-
  * 闹钟初始化广播接收器 - 负责系统启动后重新注册所有未触发的便签提醒
  */
 public class AlarmInitReceiver extends BroadcastReceiver {
@@ -62,4 +61,3 @@ public class AlarmInitReceiver extends BroadcastReceiver {
         }
     }
 }
-

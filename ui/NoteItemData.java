@@ -25,112 +25,146 @@
  import net.micode.notes.data.Notes.NoteColumns;
  import net.micode.notes.tool.DataUtils;
  
+
+ /**
+  * 便签数据项实体类，封装从数据库查询出的便签数据
+  */
  public class NoteItemData {
-     static final String[] PROJECTION = new String[]{
-         NoteColumns.ID,
-         NoteColumns.ALERTED_DATE,
-         NoteColumns.BG_COLOR_ID,
-         NoteColumns.CREATED_DATE,
-         NoteColumns.HAS_ATTACHMENT,
-         NoteColumns.MODIFIED_DATE,
-         NoteColumns.NOTES_COUNT,
-         NoteColumns.PARENT_ID,
-         NoteColumns.SNIPPET,
-         NoteColumns.TYPE,
-         NoteColumns.WIDGET_ID,
-         NoteColumns.WIDGET_TYPE,
+     // 数据库查询列名投影
+     static final String [] PROJECTION = new String [] {
+         NoteColumns.ID,                // 便签ID
+         NoteColumns.ALERTED_DATE,      // 提醒日期
+         NoteColumns.BG_COLOR_ID,       // 背景颜色ID
+         NoteColumns.CREATED_DATE,      // 创建日期
+         NoteColumns.HAS_ATTACHMENT,    // 是否有附件
+         NoteColumns.MODIFIED_DATE,     // 修改日期
+         NoteColumns.NOTES_COUNT,       // 便签数量(用于文件夹)
+         NoteColumns.PARENT_ID,         // 父文件夹ID
+         NoteColumns.SNIPPET,          // 内容摘要
+         NoteColumns.TYPE,             // 类型(便签/文件夹/系统文件夹)
+         NoteColumns.WIDGET_ID,        // 桌面小部件ID
+         NoteColumns.WIDGET_TYPE,      // 桌面小部件类型
      };
  
-     // 列索引
-     private static final int ID_COLUMN = 0;
-     private static final int ALERTED_DATE_COLUMN = 1;
-     private static final int BG_COLOR_ID_COLUMN = 2;
-     private static final int CREATED_DATE_COLUMN = 3;
-     private static final int HAS_ATTACHMENT_COLUMN = 4;
-     private static final int MODIFIED_DATE_COLUMN = 5;
-     private static final int NOTES_COUNT_COLUMN = 6;
-     private static final int PARENT_ID_COLUMN = 7;
-     private static final int SNIPPET_COLUMN = 8;
-     private static final int TYPE_COLUMN = 9;
-     private static final int WIDGET_ID_COLUMN = 10;
-     private static final int WIDGET_TYPE_COLUMN = 11;
+     // 列索引常量定义
+     private static final int ID_COLUMN                    = 0;
+     private static final int ALERTED_DATE_COLUMN          = 1;
+     private static final int BG_COLOR_ID_COLUMN           = 2;
+     private static final int CREATED_DATE_COLUMN          = 3;
+     private static final int HAS_ATTACHMENT_COLUMN        = 4;
+     private static final int MODIFIED_DATE_COLUMN         = 5;
+     private static final int NOTES_COUNT_COLUMN           = 6;
+     private static final int PARENT_ID_COLUMN             = 7;
+     private static final int SNIPPET_COLUMN               = 8;
+     private static final int TYPE_COLUMN                  = 9;
+     private static final int WIDGET_ID_COLUMN             = 10;
+     private static final int WIDGET_TYPE_COLUMN           = 11;
  
-     private long mId; // 便签ID
-     private long mAlertDate; // 提醒日期
-     private int mBgColorId; // 背景颜色ID
-     private long mCreatedDate; // 创建日期
-     private boolean mHasAttachment; // 是否有附件
-     private long mModifiedDate; // 修改日期
-     private int mNotesCount; // 便签数量
-     private long mParentId; // 父级ID
-     private String mSnippet; // 摘要
-     private int mType; // 类型
-     private int mWidgetId; // 小部件ID
-     private int mWidgetType; // 小部件类型
-     private String mName; // 联系人姓名
-     private String mPhoneNumber; // 联系人电话
+     // 便签数据字段
+     private long mId;                  // 便签ID
+     private long mAlertDate;           // 提醒日期
+     private int mBgColorId;            // 背景颜色ID
+     private long mCreatedDate;         // 创建日期
+     private boolean mHasAttachment;    // 是否有附件
+     private long mModifiedDate;        // 修改日期
+     private int mNotesCount;           // 便签数量(用于文件夹)
+     private long mParentId;            // 父文件夹ID
+     private String mSnippet;           // 内容摘要
+     private int mType;                 // 类型(便签/文件夹/系统文件夹)
+     private int mWidgetId;             // 桌面小部件ID
+     private int mWidgetType;           // 桌面小部件类型
+     private String mName;              // 联系人姓名(用于通话记录)
+     private String mPhoneNumber;       // 电话号码(用于通话记录)
  
-     // 状态标记
-     private boolean mIsLastItem;
-     private boolean mIsFirstItem;
-     private boolean mIsOnlyOneItem;
-     private boolean mIsOneNoteFollowingFolder;
-     private boolean mIsMultiNotesFollowingFolder;
+     // 位置状态标志
+     private boolean mIsLastItem;       // 是否是列表最后一项
+     private boolean mIsFirstItem;      // 是否是列表第一项
+     private boolean mIsOnlyOneItem;    // 是否是唯一一项
+     private boolean mIsOneNoteFollowingFolder;    // 是否是单个便签跟随文件夹
+     private boolean mIsMultiNotesFollowingFolder; // 是否是多个便签跟随文件夹
  
+     /**
+      * 构造函数，从Cursor初始化便签数据
+      * @param context 上下文对象
+      * @param cursor 数据库查询结果游标
+      */
      public NoteItemData(Context context, Cursor cursor) {
-         // 从游标中提取数据
+         // 从Cursor读取基本数据
+
          mId = cursor.getLong(ID_COLUMN);
          mAlertDate = cursor.getLong(ALERTED_DATE_COLUMN);
          mBgColorId = cursor.getInt(BG_COLOR_ID_COLUMN);
          mCreatedDate = cursor.getLong(CREATED_DATE_COLUMN);
-         mHasAttachment = (cursor.getInt(HAS_ATTACHMENT_COLUMN) > 0);
+
+         mHasAttachment = (cursor.getInt(HAS_ATTACHMENT_COLUMN) > 0) ? true : false;
+
          mModifiedDate = cursor.getLong(MODIFIED_DATE_COLUMN);
          mNotesCount = cursor.getInt(NOTES_COUNT_COLUMN);
          mParentId = cursor.getLong(PARENT_ID_COLUMN);
          mSnippet = cursor.getString(SNIPPET_COLUMN);
+
+         // 移除内容摘要中的复选框标记
+
          mSnippet = mSnippet.replace(NoteEditActivity.TAG_CHECKED, "").replace(
                  NoteEditActivity.TAG_UNCHECKED, "");
          mType = cursor.getInt(TYPE_COLUMN);
          mWidgetId = cursor.getInt(WIDGET_ID_COLUMN);
          mWidgetType = cursor.getInt(WIDGET_TYPE_COLUMN);
  
+
+         // 初始化通话记录相关数据
          mPhoneNumber = "";
-         // 如果是通话记录文件夹，获取电话号码
          if (mParentId == Notes.ID_CALL_RECORD_FOLDER) {
+             // 如果是通话记录文件夹下的便签，获取电话号码
              mPhoneNumber = DataUtils.getCallNumberByNoteId(context.getContentResolver(), mId);
              if (!TextUtils.isEmpty(mPhoneNumber)) {
-                 mName = Contact.getContact(context, mPhoneNumber); // 获取联系人姓名
+                 // 根据电话号码获取联系人姓名
+                 mName = Contact.getContact(context, mPhoneNumber);
                  if (mName == null) {
-                     mName = mPhoneNumber; // 如果没有找到姓名，使用电话号码
+                     mName = mPhoneNumber;
+
                  }
              }
          }
  
          if (mName == null) {
-             mName = ""; // 默认姓名为空
+
+             mName = "";
          }
-         checkPosition(cursor); // 检查位置状态
+         
+         // 检查当前项在列表中的位置状态
+         checkPostion(cursor);
      }
  
-     private void checkPosition(Cursor cursor) {
-         // 检查当前项在游标中的位置
+     /**
+      * 检查当前项在列表中的位置状态
+      * @param cursor 数据库查询结果游标
+      */
+     private void checkPostion(Cursor cursor) {
+
          mIsLastItem = cursor.isLast();
          mIsFirstItem = cursor.isFirst();
          mIsOnlyOneItem = (cursor.getCount() == 1);
          mIsMultiNotesFollowingFolder = false;
          mIsOneNoteFollowingFolder = false;
  
+
+         // 如果是便签类型且不是第一项
          if (mType == Notes.TYPE_NOTE && !mIsFirstItem) {
              int position = cursor.getPosition();
              if (cursor.moveToPrevious()) {
+                 // 检查前一项是否是文件夹
                  if (cursor.getInt(TYPE_COLUMN) == Notes.TYPE_FOLDER
                          || cursor.getInt(TYPE_COLUMN) == Notes.TYPE_SYSTEM) {
+                     // 判断是多个便签跟随文件夹还是单个便签跟随文件夹
                      if (cursor.getCount() > (position + 1)) {
-                         mIsMultiNotesFollowingFolder = true; // 多个便签跟随文件夹
+                         mIsMultiNotesFollowingFolder = true;
                      } else {
-                         mIsOneNoteFollowingFolder = true; // 一个便签跟随文件夹
+                         mIsOneNoteFollowingFolder = true;
                      }
                  }
+                 // 将游标移回原位
+
                  if (!cursor.moveToNext()) {
                      throw new IllegalStateException("cursor move to previous but can't move back");
                  }
@@ -138,7 +172,10 @@
          }
      }
  
-     // 各种状态检查方法
+
+     // ==================== 公共方法 ====================
+ 
+
      public boolean isOneFollowingFolder() {
          return mIsOneNoteFollowingFolder;
      }
@@ -152,7 +189,9 @@
      }
  
      public String getCallName() {
-         return mName; // 获取联系人姓名
+
+         return mName;
+
      }
  
      public boolean isFirst() {
@@ -163,7 +202,9 @@
          return mIsOnlyOneItem;
      }
  
+
      // 各种属性获取方法
+
      public long getId() {
          return mId;
      }
@@ -197,35 +238,21 @@
      }
  
      public long getFolderId() {
-         return mParentId; // 返回文件夹ID
-     }
- 
-     public int getType() {
-         return mType;
-     }
- 
-     public int getWidgetType() {
-         return mWidgetType;
-     }
- 
-     public int getWidgetId() {
-         return mWidgetId;
-     }
- 
-     public String getSnippet() {
-         return mSnippet;
-     }
- 
-     public boolean hasAlert() {
-         return (mAlertDate > 0); // 是否有提醒
+
+         return (mAlertDate > 0);
      }
  
      public boolean isCallRecord() {
-         return (mParentId == Notes.ID_CALL_RECORD_FOLDER && !TextUtils.isEmpty(mPhoneNumber)); // 是否是通话记录
+         return (mParentId == Notes.ID_CALL_RECORD_FOLDER && !TextUtils.isEmpty(mPhoneNumber));
      }
  
+     /**
+      * 静态方法：从Cursor获取便签类型
+      * @param cursor 数据库查询结果游标
+      * @return 便签类型
+      */
      public static int getNoteType(Cursor cursor) {
-         return cursor.getInt(TYPE_COLUMN); // 获取便签类型
+         return cursor.getInt(TYPE_COLUMN);
      }
  }
- 
+
