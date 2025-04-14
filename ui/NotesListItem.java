@@ -29,6 +29,7 @@
  import net.micode.notes.tool.DataUtils;
  import net.micode.notes.tool.ResourceParser.NoteItemBgResources;
  
+
  /**
   * 笔记列表项自定义视图，继承自LinearLayout
   */
@@ -50,6 +51,7 @@
          // 从布局文件填充视图
          inflate(context, R.layout.note_item, this);
          // 初始化各个视图控件
+
          mAlert = (ImageView) findViewById(R.id.iv_alert_icon);
          mTitle = (TextView) findViewById(R.id.tv_title);
          mTime = (TextView) findViewById(R.id.tv_time);
@@ -57,6 +59,7 @@
          mCheckBox = (CheckBox) findViewById(android.R.id.checkbox);
      }
  
+
      /**
       * 绑定数据到视图
       * @param context 上下文对象
@@ -157,3 +160,4 @@
          return mItemData;
      }
  }
+

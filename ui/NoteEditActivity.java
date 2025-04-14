@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+
 package net.micode.notes.ui;
 
 import android.app.Activity;
@@ -416,6 +417,7 @@ public class NoteEditActivity extends Activity implements OnClickListener,
 
         if (mFontSizeSelector.getVisibility() == View.VISIBLE
                 && !inRangeOfView(mFontSizeSelector, ev)) {
+
             mFontSizeSelector.setVisibility(View.GONE);
             return true;
         }

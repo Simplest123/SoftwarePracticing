@@ -30,6 +30,7 @@
  import java.util.HashSet;
  import java.util.Iterator;
  
+
  /**
   * 笔记列表适配器，用于在ListView中显示笔记数据
   */
@@ -148,22 +149,26 @@
      public HashSet<AppWidgetAttribute> getSelectedWidget() {
          HashSet<AppWidgetAttribute> itemSet = new HashSet<AppWidgetAttribute>();
          // 遍历选中项
+
          for (Integer position : mSelectedIndex.keySet()) {
              if (mSelectedIndex.get(position) == true) {
                  Cursor c = (Cursor) getItem(position);
                  if (c != null) {
                      AppWidgetAttribute widget = new AppWidgetAttribute();
                      NoteItemData item = new NoteItemData(mContext, c);
-                     widget.widgetId = item.getWidgetId();
-                     widget.widgetType = item.getWidgetType();
+
+                     widget.widgetId = item.getWidgetId(); // 获取小部件ID
+                     widget.widgetType = item.getWidgetType(); // 获取小部件类型
                      itemSet.add(widget);
-                     // 注意：不要在这里关闭cursor，只有适配器可以关闭它
+                     // 不要在这里关闭游标，只有适配器可以关闭它
                  } else {
-                     Log.e(TAG, "Invalid cursor");
+                     Log.e(TAG, "Invalid cursor"); // 日志错误
+
                      return null;
                  }
              }
          }
+
          return itemSet;
      }
  
@@ -237,8 +242,11 @@
                  }
              } else {
                  Log.e(TAG, "Invalid cursor");
+
                  return;
              }
          }
      }
+
  }
+

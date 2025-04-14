@@ -25,6 +25,7 @@
  import net.micode.notes.data.Notes.NoteColumns;
  import net.micode.notes.tool.DataUtils;
  
+
  /**
   * 便签数据项实体类，封装从数据库查询出的便签数据
   */
@@ -89,22 +90,28 @@
       */
      public NoteItemData(Context context, Cursor cursor) {
          // 从Cursor读取基本数据
+
          mId = cursor.getLong(ID_COLUMN);
          mAlertDate = cursor.getLong(ALERTED_DATE_COLUMN);
          mBgColorId = cursor.getInt(BG_COLOR_ID_COLUMN);
          mCreatedDate = cursor.getLong(CREATED_DATE_COLUMN);
+
          mHasAttachment = (cursor.getInt(HAS_ATTACHMENT_COLUMN) > 0) ? true : false;
+
          mModifiedDate = cursor.getLong(MODIFIED_DATE_COLUMN);
          mNotesCount = cursor.getInt(NOTES_COUNT_COLUMN);
          mParentId = cursor.getLong(PARENT_ID_COLUMN);
          mSnippet = cursor.getString(SNIPPET_COLUMN);
+
          // 移除内容摘要中的复选框标记
+
          mSnippet = mSnippet.replace(NoteEditActivity.TAG_CHECKED, "").replace(
                  NoteEditActivity.TAG_UNCHECKED, "");
          mType = cursor.getInt(TYPE_COLUMN);
          mWidgetId = cursor.getInt(WIDGET_ID_COLUMN);
          mWidgetType = cursor.getInt(WIDGET_TYPE_COLUMN);
  
+
          // 初始化通话记录相关数据
          mPhoneNumber = "";
          if (mParentId == Notes.ID_CALL_RECORD_FOLDER) {
@@ -115,11 +122,13 @@
                  mName = Contact.getContact(context, mPhoneNumber);
                  if (mName == null) {
                      mName = mPhoneNumber;
+
                  }
              }
          }
  
          if (mName == null) {
+
              mName = "";
          }
          
@@ -132,12 +141,14 @@
       * @param cursor 数据库查询结果游标
       */
      private void checkPostion(Cursor cursor) {
+
          mIsLastItem = cursor.isLast();
          mIsFirstItem = cursor.isFirst();
          mIsOnlyOneItem = (cursor.getCount() == 1);
          mIsMultiNotesFollowingFolder = false;
          mIsOneNoteFollowingFolder = false;
  
+
          // 如果是便签类型且不是第一项
          if (mType == Notes.TYPE_NOTE && !mIsFirstItem) {
              int position = cursor.getPosition();
@@ -153,6 +164,7 @@
                      }
                  }
                  // 将游标移回原位
+
                  if (!cursor.moveToNext()) {
                      throw new IllegalStateException("cursor move to previous but can't move back");
                  }
@@ -160,8 +172,10 @@
          }
      }
  
+
      // ==================== 公共方法 ====================
  
+
      public boolean isOneFollowingFolder() {
          return mIsOneNoteFollowingFolder;
      }
@@ -175,7 +189,9 @@
      }
  
      public String getCallName() {
+
          return mName;
+
      }
  
      public boolean isFirst() {
@@ -186,6 +202,9 @@
          return mIsOnlyOneItem;
      }
  
+
+     // 各种属性获取方法
+
      public long getId() {
          return mId;
      }
@@ -219,26 +238,7 @@
      }
  
      public long getFolderId() {
-         return mParentId;
-     }
- 
-     public int getType() {
-         return mType;
-     }
- 
-     public int getWidgetType() {
-         return mWidgetType;
-     }
- 
-     public int getWidgetId() {
-         return mWidgetId;
-     }
- 
-     public String getSnippet() {
-         return mSnippet;
-     }
- 
-     public boolean hasAlert() {
+
          return (mAlertDate > 0);
      }
  
@@ -255,3 +255,4 @@
          return cursor.getInt(TYPE_COLUMN);
      }
  }
+

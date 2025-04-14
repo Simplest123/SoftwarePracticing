@@ -1,4 +1,5 @@
 /*
+
  * 版权声明，代码归属于MiCode开源社区（www.micode.net）
  * 遵循Apache License 2.0开源协议
  */
@@ -109,3 +110,4 @@ public class FoldersListAdapter extends CursorAdapter {
         }
     }
 }
+

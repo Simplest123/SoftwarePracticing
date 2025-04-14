@@ -1,15 +1,60 @@
 /*
- * 闹钟提醒活动类 - 处理便签提醒通知的展示和交互
+
+ * Copyright (c) 2010-2011, The MiCode Open Source Community (www.micode.net)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
+package net.micode.notes.ui;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.DialogInterface.OnDismissListener;
+import android.content.Intent;
+import android.media.AudioManager;
+// 处理闹钟的声音播放
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
+import android.view.Window;
+import android.view.WindowManager;
+
+import net.micode.notes.R;
+import net.micode.notes.data.Notes;
+import net.micode.notes.tool.DataUtils;
+
+import java.io.IOException;
+
+
+// 该类用于处理闹钟提醒活动
 public class AlarmAlertActivity extends Activity implements OnClickListener, OnDismissListener {
-    private long mNoteId;          // 当前提醒关联的便签ID
-    private String mSnippet;      // 便签内容预览片段
-    private static final int SNIPPET_PREW_MAX_LEN = 60; // 预览文本最大长度
-    MediaPlayer mPlayer;          // 媒体播放器用于播放提醒音
+    private long mNoteId;
+    private String mSnippet;
+    private static final int SNIPPET_PREW_MAX_LEN = 60;
+// 处理闹钟的声音播放
+    MediaPlayer mPlayer;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         requestWindowFeature(Window.FEATURE_NO_TITLE); // 隐藏标题栏
 
         // 获取窗口对象并设置锁屏显示标志
@@ -17,6 +62,7 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
         win.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
 
         // 如果屏幕关闭，设置唤醒相关标志
+
         if (!isScreenOn()) {
             win.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                     | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
@@ -24,43 +70,37 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
                     | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR);
         }
 
-        // 从Intent获取便签数据
+
+// 获取或传递的 Intent 数据
         Intent intent = getIntent();
+
         try {
-            // 解析URI路径获取便签ID (格式: content://net.micode.notes/note/1)
             mNoteId = Long.valueOf(intent.getData().getPathSegments().get(1));
-            
-            // 通过ContentResolver查询便签内容
             mSnippet = DataUtils.getSnippetById(this.getContentResolver(), mNoteId);
-            
-            // 截断过长的预览文本并添加省略指示
-            mSnippet = mSnippet.length() > SNIPPET_PREW_MAX_LEN ? 
-                mSnippet.substring(0, SNIPPET_PREW_MAX_LEN) + 
-                getResources().getString(R.string.notelist_string_info) : mSnippet;
+            mSnippet = mSnippet.length() > SNIPPET_PREW_MAX_LEN ? mSnippet.substring(0,
+                    SNIPPET_PREW_MAX_LEN) + getResources().getString(R.string.notelist_string_info)
+                    : mSnippet;
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
-            return; // 数据异常直接退出
+            return;
         }
 
-        // 初始化媒体播放器
+// 处理闹钟的声音播放
         mPlayer = new MediaPlayer();
-        
-        // 检查便签是否仍然有效
         if (DataUtils.visibleInNoteDatabase(getContentResolver(), mNoteId, Notes.TYPE_NOTE)) {
-            showActionDialog();  // 显示提醒对话框
-            playAlarmSound();    // 播放提醒音
+            showActionDialog();
+            playAlarmSound();
         } else {
-            finish(); // 便签已删除则结束活动
+            finish();
         }
     }
 
-    /**
-     * 检查屏幕是否亮起
-     */
+
     private boolean isScreenOn() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         return pm.isScreenOn();
     }
+
 
     /**
      * 播放系统默认闹钟音
@@ -74,11 +114,13 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
                 Settings.System.MODE_RINGER_STREAMS_AFFECTED, 0);
 
         // 根据设置决定音频流类型
+
         if ((silentModeStreams & (1 << AudioManager.STREAM_ALARM)) != 0) {
             mPlayer.setAudioStreamType(silentModeStreams);
         } else {
             mPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
         }
+
         
         // 准备并播放音频
         try {
@@ -121,6 +163,7 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.putExtra(Intent.EXTRA_UID, mNoteId);
                 startActivity(intent); // 跳转到便签编辑界面
+
                 break;
             default:
                 break;
@@ -130,10 +173,12 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
     /**
      * 对话框关闭时停止铃声并结束活动
      */
+
     public void onDismiss(DialogInterface dialog) {
         stopAlarmSound();
         finish();
     }
+
 
     /**
      * 停止铃声播放并释放资源
@@ -146,3 +191,4 @@ public class AlarmAlertActivity extends Activity implements OnClickListener, OnD
         }
     }
 }
+

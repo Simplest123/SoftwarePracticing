@@ -25,20 +25,22 @@
  
  import java.util.HashMap;
  
- /**
-  * 联系人信息查询工具类，用于根据电话号码获取联系人名称
-  */
+
+ // Contact类用于获取联系人信息
  public class Contact {
-     // 缓存联系人查询结果，key: 电话号码，value: 联系人名称
+     // 用于缓存联系人信息的HashMap
      private static HashMap<String, String> sContactCache;
-     private static final String TAG = "Contact"; // 日志标签
+     // 日志标签
+     private static final String TAG = "Contact";
  
-     // 构建查询条件的SQL语句模板
+     // 查询条件，用于匹配来电号码
+
      private static final String CALLER_ID_SELECTION = "PHONE_NUMBERS_EQUAL(" + Phone.NUMBER
      + ",?) AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'"
      + " AND " + Data.RAW_CONTACT_ID + " IN "
              + "(SELECT raw_contact_id "
              + " FROM phone_lookup"
+
              + " WHERE min_match = '+')"; // '+'将在运行时替换为最小匹配位数
  
      /**
@@ -47,17 +49,19 @@
       * @param phoneNumber 要查询的电话号码
       * @return 对应的联系人名称，未找到时返回null
       */
+
      public static String getContact(Context context, String phoneNumber) {
          // 初始化缓存
          if(sContactCache == null) {
              sContactCache = new HashMap<String, String>();
          }
  
-         // 优先从缓存中获取
+
          if(sContactCache.containsKey(phoneNumber)) {
              return sContactCache.get(phoneNumber);
          }
  
+
          // 构建完整的查询条件：替换最小匹配位数
          String selection = CALLER_ID_SELECTION.replace("+",
                  PhoneNumberUtils.toCallerIDMinMatch(phoneNumber));
@@ -88,3 +92,4 @@
          }
      }
  }
+
