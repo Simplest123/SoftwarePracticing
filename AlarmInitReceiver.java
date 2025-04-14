@@ -1,90 +1,91 @@
 /*
- * 闹钟初始化广播接收器（AlarmInitReceiver）
- *
- * 功能：
- * 当设备重启时（如 BOOT_COMPLETED），系统会清除之前设置的 Alarm。
- * 这个广播接收器负责在开机时重新注册所有有效但尚未触发的便签提醒，
- * 确保便签的提醒不会因系统重启而失效。
+ * 闹钟初始化广播接收器 - 负责系统启动后重新注册所有未触发的便签提醒
+ * 主要功能：
+ * 1. 监听系统启动完成广播(BOOT_COMPLETED)
+ * 2. 查询数据库中所有未来时间的便签提醒
+ * 3. 为每个有效提醒重新设置系统闹钟
  */
 public class AlarmInitReceiver extends BroadcastReceiver {
 
-    // 查询数据库所需的字段，仅便签 ID 和提醒时间
+    // 数据库查询投影列（只需ID和提醒时间列）
+    // 优化查询性能，只选择必要的列
     private static final String [] PROJECTION = new String [] {
-            NoteColumns.ID,            // 便签的唯一标识符
-            NoteColumns.ALERTED_DATE   // 设置的提醒时间（Unix 时间戳）
+        NoteColumns.ID,            // 便签ID - 主键
+        NoteColumns.ALERTED_DATE   // 提醒时间戳 - 毫秒级Unix时间
     };
 
-    // 便签查询结果中各字段的列索引，提高数据访问效率
-    private static final int COLUMN_ID           = 0; // 便签ID所在列的索引
-    private static final int COLUMN_ALERTED_DATE = 1; // 提醒时间所在列的索引
+    // 列索引常量（提高查询结果读取效率）
+    // 使用常量代替魔法数字，提高代码可读性
+    private static final int COLUMN_ID                = 0; // ID列索引
+    private static final int COLUMN_ALERTED_DATE      = 1; // 提醒时间列索引
 
+    /**
+     * 广播接收器回调方法
+     * @param context 应用上下文
+     * @param intent 接收到的广播Intent（应为BOOT_COMPLETED）
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
-        // 获取当前系统时间（单位：毫秒）
+        // 获取当前系统时间（毫秒）
         long currentDate = System.currentTimeMillis();
-
-        /*
-         * 查询条件说明：
-         * - 只获取设置了提醒时间的普通便签（Notes.TYPE_NOTE）
-         * - 且提醒时间尚未到（即提醒时间 > 当前时间）
-         */
+        
+        // 查询所有未触发且有效的便签提醒（TYPE_NOTE表示普通便签）
+        // 查询条件：提醒时间 > 当前时间 AND 便签类型 = 普通便签
         Cursor c = context.getContentResolver().query(
-                Notes.CONTENT_NOTE_URI,             // 便签的内容URI
-                PROJECTION,                         // 需要查询的字段
-                NoteColumns.ALERTED_DATE + ">? AND " +
-                        NoteColumns.TYPE + "=" + Notes.TYPE_NOTE,
-                new String[] { String.valueOf(currentDate) }, // 查询参数：当前时间
-                null); // 不指定排序
+                Notes.CONTENT_NOTE_URI,    // 便签内容URI (content://net.micode.notes/note)
+                PROJECTION,                // 查询列 - 只获取ID和提醒时间
+                NoteColumns.ALERTED_DATE + ">? AND " + // 提醒时间>当前时间
+                NoteColumns.TYPE + "=" + Notes.TYPE_NOTE, // 且为普通便签类型
+                new String[] { String.valueOf(currentDate) }, // 当前时间参数
+                null); // 无排序要求
 
-        // 如果查询有结果
+        // 检查查询结果是否有效
         if (c != null) {
+            // 遍历查询结果（至少有一条记录）
             if (c.moveToFirst()) {
-                // 遍历所有符合条件的便签，重新为其注册 Alarm
                 do {
-                    // 从结果集中读取提醒时间
+                    // 获取该便签的提醒时间（毫秒级时间戳）
                     long alertDate = c.getLong(COLUMN_ALERTED_DATE);
-
-                    // 构造将被触发的广播Intent，目标是 AlarmReceiver
+                    
+                    // 创建指向AlarmReceiver的Intent
+                    // 用于在提醒时间到达时触发AlarmReceiver
                     Intent sender = new Intent(context, AlarmReceiver.class);
-
-                    // 为Intent设置唯一标识（Data URI），便于 AlarmReceiver 判断是哪条便签
+                    // 设置数据URI（格式: content://net.micode.notes/note/[id]）
+                    // 将便签ID附加到基础URI后形成完整URI
                     sender.setData(ContentUris.withAppendedId(
-                            Notes.CONTENT_NOTE_URI,
+                            Notes.CONTENT_NOTE_URI, 
                             c.getLong(COLUMN_ID)));
-
-                    /*
-                     * 构建 PendingIntent：表示未来某个时间点触发的广播事件
-                     * 参数说明：
-                     * - context：当前上下文
-                     * - requestCode：唯一请求码，这里为 0，多个 Alarm 会共享相同的 requestCode
-                     * - sender：目标 Intent
-                     * - flags：标志位，这里为 0（可设置 FLAG_IMMUTABLE 等根据版本）
-                     */
+                    
+                    // 创建PendingIntent（FLAG不可变）
+                    // 参数说明：
+                    // context - 上下文
+                    // 0 - requestCode（不用于区分）
+                    // sender - 要执行的Intent
+                    // 0 - flags（FLAG_IMMUTABLE）
                     PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                            context,
-                            0,
-                            sender,
-                            0);
-
-                    // 获取系统的闹钟服务
-                    AlarmManager alarmManager = (AlarmManager) context
+                            context, 
+                            0, 
+                            sender, 
+                            PendingIntent.FLAG_IMMUTABLE); // Android 12+需要此标志
+                    
+                    // 获取AlarmManager系统服务
+                    AlarmManager alermManager = (AlarmManager) context
                             .getSystemService(Context.ALARM_SERVICE);
-
-                    /*
-                     * 使用 AlarmManager 注册一个 RTC_WAKEUP 类型的精确闹钟：
-                     * - RTC_WAKEUP：以系统实时时间为基准，并在时间到达时唤醒设备
-                     * - alertDate：闹钟触发的时间点（Unix 时间戳）
-                     * - pendingIntent：当时间到达时发送的广播
-                     */
-                    alarmManager.set(
-                            AlarmManager.RTC_WAKEUP,
-                            alertDate,
-                            pendingIntent);
-
-                } while (c.moveToNext()); // 移动到下一个便签提醒
+                    
+                    // 设置精确闹钟（RTC_WAKEUP会唤醒设备）
+                    // 参数说明：
+                    // RTC_WAKEUP - 使用实时时钟并在触发时唤醒设备
+                    // alertDate - 精确触发时间（毫秒）
+                    // pendingIntent - 触发时执行的动作
+                    alermManager.setExact(
+                            AlarmManager.RTC_WAKEUP, // 使用实时时钟
+                            alertDate,              // 触发时间
+                            pendingIntent);         // 触发动作
+                } while (c.moveToNext()); // 处理下一条记录
             }
-            // 关闭 Cursor，释放数据库资源
-            c.close();
+            // 关闭Cursor释放资源
+            // 重要：避免内存泄漏
+            c.close(); 
         }
     }
 }
