@@ -14,82 +14,88 @@
  * limitations under the License.
  */
 
- package net.micode.notes.data;
+package net.micode.notes.data;
 
- import android.content.Context;
- import android.database.Cursor;
- import android.provider.ContactsContract.CommonDataKinds.Phone;
- import android.provider.ContactsContract.Data;
- import android.telephony.PhoneNumberUtils;
- import android.util.Log;
- 
- import java.util.HashMap;
- 
+import android.content.Context;
+import android.database.Cursor;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Data;
+import android.telephony.PhoneNumberUtils;
+import android.util.Log;
 
- // Contact类用于获取联系人信息
- public class Contact {
-     // 用于缓存联系人信息的HashMap
-     private static HashMap<String, String> sContactCache;
-     // 日志标签
-     private static final String TAG = "Contact";
- 
-     // 查询条件，用于匹配来电号码
+import java.util.HashMap;
 
-     private static final String CALLER_ID_SELECTION = "PHONE_NUMBERS_EQUAL(" + Phone.NUMBER
-     + ",?) AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'"
-     + " AND " + Data.RAW_CONTACT_ID + " IN "
-             + "(SELECT raw_contact_id "
-             + " FROM phone_lookup"
+/**
+ * 该类用于查询联系人信息。
+ * 它通过电话号码查询联系人姓名，并使用缓存机制减少数据库查询次数。
+ */
+public class Contact {
+    // 用于缓存电话号码和联系人姓名的映射，以减少数据库查询次数
+    private static HashMap<String, String> sContactCache;
+    private static final String TAG = "Contact";
 
-             + " WHERE min_match = '+')"; // '+'将在运行时替换为最小匹配位数
- 
-     /**
-      * 根据电话号码查询联系人名称
-      * @param context 上下文对象
-      * @param phoneNumber 要查询的电话号码
-      * @return 对应的联系人名称，未找到时返回null
-      */
+    /**
+     * 查询联系人数据库的 SQL 语句。
+     * 通过电话号码匹配联系人。
+     * 这里使用了 PHONE_NUMBERS_EQUAL 以便处理不同格式的电话号码。
+     */
+    private static final String CALLER_ID_SELECTION = "PHONE_NUMBERS_EQUAL(" + Phone.NUMBER
+            + ",?) AND " + Data.MIMETYPE + "='" + Phone.CONTENT_ITEM_TYPE + "'"
+            + " AND " + Data.RAW_CONTACT_ID + " IN "
+            + "(SELECT raw_contact_id "
+            + " FROM phone_lookup"
+            + " WHERE min_match = '+')";
 
-     public static String getContact(Context context, String phoneNumber) {
-         // 初始化缓存
-         if(sContactCache == null) {
-             sContactCache = new HashMap<String, String>();
-         }
- 
+    /**
+     * 根据电话号码获取联系人姓名。
+     *
+     * @param context 应用程序的上下文，用于访问 ContentResolver。
+     * @param phoneNumber 要查询的电话号码。
+     * @return 如果找到联系人，则返回联系人姓名，否则返回 null。
+     */
+    public static String getContact(Context context, String phoneNumber) {
+        // 初始化联系人缓存 HashMap
+        if (sContactCache == null) {
+            sContactCache = new HashMap<String, String>();
+        }
 
-         if(sContactCache.containsKey(phoneNumber)) {
-             return sContactCache.get(phoneNumber);
-         }
- 
+        // 如果缓存中已有该电话号码对应的联系人姓名，则直接返回
+        if (sContactCache.containsKey(phoneNumber)) {
+            return sContactCache.get(phoneNumber);
+        }
 
-         // 构建完整的查询条件：替换最小匹配位数
-         String selection = CALLER_ID_SELECTION.replace("+",
-                 PhoneNumberUtils.toCallerIDMinMatch(phoneNumber));
-         
-         // 查询联系人数据库
-         Cursor cursor = context.getContentResolver().query(
-                 Data.CONTENT_URI,                // 数据URI
-                 new String [] { Phone.DISPLAY_NAME }, // 要获取的列（显示名称）
-                 selection,                       // 查询条件
-                 new String[] { phoneNumber },    // 查询参数
-                 null);                           // 排序方式
- 
-         if (cursor != null && cursor.moveToFirst()) {
-             try {
-                 // 获取并缓存联系人名称
-                 String name = cursor.getString(0);
-                 sContactCache.put(phoneNumber, name);
-                 return name;
-             } catch (IndexOutOfBoundsException e) {
-                 Log.e(TAG, "Cursor字段获取错误: " + e.toString());
-                 return null;
-             } finally {
-                 cursor.close(); // 确保关闭Cursor释放资源
-             }
-         } else {
-             Log.d(TAG, "未找到匹配的联系人号码:" + phoneNumber);
-             return null;
-         }
-     }
- }
+        // 生成匹配的 SQL 查询语句
+        String selection = CALLER_ID_SELECTION.replace("+",
+                PhoneNumberUtils.toCallerIDMinMatch(phoneNumber));
 
+        // 查询联系人数据库
+        Cursor cursor = context.getContentResolver().query(
+                Data.CONTENT_URI,
+                new String[]{ Phone.DISPLAY_NAME },  // 只查询联系人姓名
+                selection,
+                new String[]{ phoneNumber },  // 绑定参数，防止 SQL 注入
+                null);
+
+        // 处理查询结果
+        if (cursor != null && cursor.moveToFirst()) {
+            try {
+                // 获取联系人姓名
+                String name = cursor.getString(0);
+                // 将结果存入缓存
+                sContactCache.put(phoneNumber, name);
+                return name;
+            } catch (IndexOutOfBoundsException e) {
+                // 捕获异常，防止崩溃，并记录日志
+                Log.e(TAG, " Cursor get string error " + e.toString());
+                return null;
+            } finally {
+                // 关闭游标，防止内存泄漏
+                cursor.close();
+            }
+        } else {
+            // 如果没有匹配的联系人，记录日志
+            Log.d(TAG, "No contact matched with number:" + phoneNumber);
+            return null;
+        }
+    }
+}
